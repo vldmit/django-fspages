@@ -1,0 +1,1 @@
+Text template, {{ value }}should not be displayed, as the metadata file is corrupt
