@@ -2,3 +2,5 @@
 .coverage
 .project
 .pydevproject
+/MANIFEST
+/dist

@@ -1,0 +1,3 @@
+include test/*.py
+graft test/templates
+graft test/test_pages

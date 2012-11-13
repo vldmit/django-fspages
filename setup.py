@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='django-fspages',
-      description='Djnango application for serving templates from the file system',
+      description='Django application for serving templates from the file system',
       author='Vladimir Dmitriev',
       author_email='vldmit@gmail.com',
       version='0.1',
