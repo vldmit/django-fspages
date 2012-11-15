@@ -4,7 +4,8 @@ import json
 import urllib
 import logging
 
-from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.http import HttpResponse, Http404, HttpResponseRedirect,\
+    HttpResponseForbidden
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _, get_language
 from django.core.urlresolvers import resolve, reverse
@@ -51,6 +52,9 @@ def serve(request, path=None, storage=None, index_document='index.html',
         resolver_match = resolve(request.path_info)
         viewname = resolver_match.url_name
         return HttpResponseRedirect(reverse(viewname, kwargs = { 'path': newpath }))
+    if newpath.find(metadata_extension, len(newpath) - len(metadata_extension)) > 0:
+        return HttpResponseForbidden()
+    
     newpath = posixpath.join(*newpath.split('/'))
     
     localepath = u"%s/%s" % ( get_language(), newpath)

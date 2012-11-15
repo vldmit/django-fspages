@@ -62,6 +62,10 @@ class FSPageTests(TestCase):
         response = self.client.get('/pages/redirect')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], "http://somedomain/somepath")
+    
+    def test_forbid_metadata_extensions(self):
+        response = self.client.get('/pages/foo.html.meta.json')
+        self.assertEqual(response.status_code, 403)
 
 if __name__ == '__main__':
     unittest.main()
