@@ -32,7 +32,7 @@ flatpages may not always be a convenient, as several problem would arise soon:
   placeholders without creating own flatpage object.
 
 - there are two separate paths of customizing the site appearance by
-  the editors Ñ by modifying templates (served from the file system by 
+  the editors - by modifying templates (served from the file system by 
   default), then editing HTML content of ``FlatPage`` object (via django admin 
   interface).
 
@@ -66,15 +66,26 @@ Add ``fspages.views.serve`` into your urlconf, example:
 
 ::
 
+  from django.core.files.storage import FileSystemStorage
+  from fspages.storage import FSPageStorage
+  
+  fspages_storage = FSPageStorage(
+    backend=FileSystemStorage(location='/path/to/pages/'))
+  
+  i18n_storage = FSPageStorage(
+    backend=FileSystemStorage(location='/another/path/to/pages/'),
+    index_document='index.html',
+    metadata_extension='.meta.json')
+  
   urlpatterns = patterns('',
       url(r'^pages/(?P<path>.*)$', 'fspages.views.serve', {
-          'document_root': '/path/to/pages/', 
+          'storage': fspages_storage, 
           }, 'fspages'),
   )
   
   urlpatterns += i18n_patterns('',
       url(r'^i18n_pages/(?P<path>.*)$', 'fspages.views.serve', {
-          'document_root': '/another/path/to/your/i18/pages', 
+          'storage': i18n_storage, 
           }, 'i18n_fspages')
   )
 
@@ -86,8 +97,17 @@ View options
 path (required)
   Path string matched in urlpattern, which to be mapped to page template. 
 
-document_root (required)
-  Path to the root directory of your pages
+storage (required)
+  fspages.storage.FSPageStorage instance
+
+FSPageStorage constructor parameters
+------------------------------------
+
+backend (required)
+  django storage object instance, usually ``FileSystemStorage``. django-fspages
+  automatically extends ``FileSystemStorage`` with additional required methods
+  declared in ``fspages.storage.StorageMixin``. For other storage classes, you
+  would need to provide those mixins on your own.
 
 index_document
   When ``path`` points to the directory, view tries to open ``index_document``

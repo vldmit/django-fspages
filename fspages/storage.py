@@ -3,10 +3,18 @@
 
 import os, shutil
 import json
+import logging
+import posixpath
 
 from django.core.files.move import file_move_safe
 from django.core.files.storage import FileSystemStorage
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation,\
+    ObjectDoesNotExist
+from django.utils.translation import get_language
+from django.conf import settings
+import mimetypes
+
+logger = logging.getLogger(__name__)
 
 METADATA_LOADERS = {
     'json': lambda x: json.loads(x)
@@ -20,18 +28,96 @@ METADATA_DEFAULTS = {
     'redirect_path': False,
 }
 
+class FSPage(object):
+    """
+    Represent single page
+    """
+    
+    def __init__(self, path, data, metadata, language, storage=None):
+        self.path = path
+        self.data = data
+        self.metadata = metadata
+        self.storage = storage
+        self.language = language
+        self.metadata['content-type'] = self.metadata['content-type'] or \
+            mimetypes.guess_type(self.path)[0] or 'application/octet-stream'
+    
 class FSPageStorage(object):
     """
     Storage class for FSPage objects
     """
     
-    def __init__(self, storage=None, index_document='index.html',
+    def __init__(self, backend=None, index_document='index.html',
           metadata_extension='.meta.json', metadata_loader=METADATA_LOADERS['json'],
           metadata_defaults=METADATA_DEFAULTS):
-        self._storage = check_mixin(storage)
+        if backend is None:
+            raise ImproperlyConfigured(u"No django storage is not provided")        
+        self.storage = check_mixin(backend)
+        self.index_document = index_document
+        self.metadata_extension = metadata_extension
+        self.metadata_loader = metadata_loader
+        self.metadata_defaults = metadata_defaults
     
-    def get(self, obj):
-        pass
+    def get(self, path, lang=None, fallback=True):
+        """
+        Return FSPage object at the given path. A localized version of a page
+        is returned.
+        
+        To request a page with specific language, pass language code to lang;
+        fallback parameter regulates whether to return default language page or
+        not if localized version is not available.
+        """
+        if path.find(self.metadata_extension, 
+                     len(path) - len(self.metadata_extension)) > 0:
+            raise SuspiciousOperation("Acccess for metadata files is not allowed")
+ 
+        if lang is None:
+            lang = get_language()
+        data = metadata = None
+        if lang != settings.LANGUAGE_CODE:
+            localepath = u"%s/%s" % (lang, path)
+            res = self._get(localepath)
+            if res:
+                data, metadata = res
+                return FSPage(path, data, metadata, lang, storage=self)
+        if fallback:
+            res = self._get(path)
+            if res:
+                data, metadata = res
+                return FSPage(path, data, metadata, settings.LANGUAGE_CODE, 
+                              storage=self)
+
+        raise ObjectDoesNotExist(u"Page %s is not found" % path)
+    
+    def _get(self, path):
+        """
+        Return FSPage object at the given path, or None if object is not available.
+        """
+        if self.storage.isdir(path):
+            path = posixpath.join(path, self.index_document)
+        
+        metadata = self.metadata_defaults.copy()
+        metadata_path = path + self.metadata_extension
+        metadata_available = False
+        if self.storage.isfile(metadata_path):
+            try:
+                f = self.storage.open(metadata_path)
+                metadata.update(self.metadata_loader(f.read().decode('utf-8')))
+                metadata_available = True
+            except:
+                logger.error(u"Can not load metadata file: %s" % metadata_path)
+        
+        if self.storage.isfile(path):
+            f = self.storage.open(path)
+            data = f.read().decode(metadata['encoding'])
+        else:
+            if metadata_available:
+                logger.warning(u"Page file %s is missing while metadata is available" % path)
+                data = ""
+            else:
+                return None
+        
+        return data, metadata
 
 class StorageMixin(object):
     """
