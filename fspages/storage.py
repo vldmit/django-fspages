@@ -26,6 +26,9 @@ METADATA_DEFAULTS = {
     'content-type': None, # will be guessed with mimetypes
     'encoding': 'utf-8',
     'redirect_path': False,
+    'sitemap_priority': 0.5,
+    'sitemap_changefreq': None,
+    'sitemap_protocol': 'http',
 }
 
 class FSPage(object):
@@ -41,6 +44,12 @@ class FSPage(object):
         self.language = language
         self.metadata['content-type'] = self.metadata['content-type'] or \
             mimetypes.guess_type(self.path)[0] or 'application/octet-stream'
+    
+    def lastmod(self, path):
+        return self.storage.lastmod(path)
+    
+    def __unicode__(self):
+        return u"<Page '%s' (%s)>" % (self.path, self.language)
     
 class FSPageStorage(object):
     """
@@ -118,6 +127,37 @@ class FSPageStorage(object):
                 return None
         
         return data, metadata
+    
+    def lastmod(self, path):
+        "Return last modification time for path as datetime.datetime object"
+        return self.storage.modified_time(path)
+    
+    def enabled_languages(self):
+        "Return list of directories with translations"
+        language_prefixes = map(lambda x: x[0], settings.LANGUAGES)
+        language_prefixes = filter(lambda x: self.storage.isdir(x),
+                                   language_prefixes)
+        return language_prefixes
+    
+    def listdir(self, path, lang=None):
+        """
+        Lists the contents of the specified path, returning a 2-tuple of lists;
+        the first item being directories, the second item being files. For root
+        path, enabled_languages() directories are filtered out. Files with 
+        metadata_extensions are filtered out too.
+        """
+        if lang:
+            path = posixpath.join(lang, path)
+
+        dirs, files = self.storage.listdir(path)
+        if path == "":
+            enabled_languages = self.enabled_languages()
+            dirs = filter(lambda x: x not in enabled_languages, dirs)
+        
+        files = filter(lambda x: x.find(self.metadata_extension,
+                                        len(x) - len(self.metadata_extension)) == -1, files)
+        
+        return dirs, files
 
 class StorageMixin(object):
     """

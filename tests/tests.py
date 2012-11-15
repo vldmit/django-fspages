@@ -15,7 +15,9 @@ settings.configure(test_settings)
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from fspages.storage import FSPageStorage
+from fspages.sitemap import FSPagesSitemap
 from django.core.files.storage import FileSystemStorage
+from django.utils.translation import activate
 
 logger = logging.getLogger('fspages') # disable fspages logs as no loggers are initialized by Django
 class NullHandler(logging.Handler):
@@ -77,6 +79,10 @@ class FSPageStorageTests(TestCase):
     """
     storage = FSPageStorage(backend=FileSystemStorage(location=pjoin(here, 'test_pages')))
     
+    def setUp(self):
+        TestCase.setUp(self)
+        activate(settings.LANGUAGE_CODE)
+    
     def test_improper_init(self):
         self.assertRaises(ImproperlyConfigured, FSPageStorage)
     
@@ -114,7 +120,46 @@ class FSPageStorageTests(TestCase):
     def test_only_metada_file(self):
         page = self.storage.get('baz.txt')
         self.assertEqual(len(page.data), 0)
-        
-        
+    
+    def test_enabled_languages(self):
+        self.assertEqual(self.storage.enabled_languages(), ['de'])
+    
+    def test_listdir(self):
+        dirs, files = self.storage.listdir('')
+        self.assertEqual(dirs, ['dir'])
+        self.assertIn('bar.txt', files)
+        self.assertNotIn('redirect.meta.json', files)
+    
+    def test_lastmod(self):
+        import datetime
+        date = self.storage.lastmod('bar.txt')
+        self.assertTrue(isinstance(date, datetime.datetime))
+
+class FSPageSitemapTests(TestCase):
+    """
+    Test fspages.sitemap.FSPageSitemap
+    """
+    from urls import teststorage
+    sitemap = FSPagesSitemap(teststorage, 'i18n_fspages')
+    storage = teststorage
+    
+    def test_items(self):
+        items = self.sitemap.items()
+        paths = map(lambda x: x.path, items)
+        self.assertEqual(6, len(items))
+        self.assertIn('dir/file.txt', paths)
+        self.assertEqual(1, len(filter(lambda x: x.language == 'de', items)))
+    
+    def test_location(self):
+        page = self.storage.get('index.html', lang='de', fallback=False)
+        location = self.sitemap.location(page)
+        self.assertEqual(location, '/de/i18n_pages/index.html')
+    
+    def test_parameters(self):
+        page = self.storage.get('foo.html')
+        self.assertEqual(0.7, page.metadata['sitemap_priority'])
+        self.assertEqual('weekly', page.metadata['sitemap_changefreq'])
+        self.assertEqual('https', page.metadata['sitemap_protocol'])
+
 if __name__ == '__main__':
     unittest.main()
