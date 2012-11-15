@@ -1,10 +1,12 @@
 from django.conf.global_settings import *
 from os.path import join as pjoin, abspath, dirname
 
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'tests',                      # Or path to database file if using sqlite3.
+        'NAME': pjoin(dirname(__file__), 'tests.sqlite'), # Or path to database file if using sqlite3.
     }
 }
 
