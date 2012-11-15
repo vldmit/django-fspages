@@ -1,13 +1,37 @@
 # -*- coding: utf-8 -*-
-# mixin is borrowed from https://github.com/sehmaschine/django-filebrowser/
+# StorageMixins are borrowed from https://github.com/sehmaschine/django-filebrowser/
 
-# PYTHON IMPORTS
 import os, shutil
+import json
 
-# DJANGO IMPORTS
 from django.core.files.move import file_move_safe
 from django.core.files.storage import FileSystemStorage
 from django.core.exceptions import ImproperlyConfigured
+
+METADATA_LOADERS = {
+    'json': lambda x: json.loads(x)
+}
+
+METADATA_DEFAULTS = {
+    'status_code': 200,
+    'template_context': {},
+    'content-type': None, # will be guessed with mimetypes
+    'encoding': 'utf-8',
+    'redirect_path': False,
+}
+
+class FSPageStorage(object):
+    """
+    Storage class for FSPage objects
+    """
+    
+    def __init__(self, storage=None, index_document='index.html',
+          metadata_extension='.meta.json', metadata_loader=METADATA_LOADERS['json'],
+          metadata_defaults=METADATA_DEFAULTS):
+        self._storage = check_mixin(storage)
+    
+    def get(self, obj):
+        pass
 
 class StorageMixin(object):
     """
