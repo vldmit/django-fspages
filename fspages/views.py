@@ -1,4 +1,3 @@
-import os
 import posixpath
 import mimetypes
 import json
@@ -11,6 +10,8 @@ from django.utils.translation import ugettext as _, get_language
 from django.core.urlresolvers import resolve, reverse
 from django.template import Template, RequestContext
 from django.conf import settings
+
+from storage import check_mixin
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +27,11 @@ METADATA_DEFAULTS = {
     'redirect_path': False,
 }
 
-def serve(request, path=None, document_root=None, index_document='index.html',
+def serve(request, path=None, storage=None, index_document='index.html',
           metadata_extension='.meta.json', metadata_loader=METADATA_LOADERS['json'],
           metadata_defaults=METADATA_DEFAULTS):
     """
-    Serve django templates below a given point in the directory structure.
+    Serve pages from a storage as django templates.
     
     Each template may be supplemented with a serialized metadata file which have a same
     name as the template plus metadata_entension suffix. Metadata is loaded by calling
@@ -39,8 +40,10 @@ def serve(request, path=None, document_root=None, index_document='index.html',
     If internationalization is enabled in django settings, the view will at first look for the
     localized version of the template by prepending the path with locale name directory.
     """
-    if document_root is None:
-        raise ImproperlyConfigured(_(u"document_root is not provided"))
+    if storage is None:
+        raise ImproperlyConfigured(_(u"No storage is not provided"))
+    storage = check_mixin(storage)
+    
     path = urllib.unquote(path)
     newpath = posixpath.normpath('/' + path.replace('\\', '/').lstrip('/'))
     newpath = newpath.lstrip('/')
@@ -48,23 +51,23 @@ def serve(request, path=None, document_root=None, index_document='index.html',
         resolver_match = resolve(request.path_info)
         viewname = resolver_match.url_name
         return HttpResponseRedirect(reverse(viewname, kwargs = { 'path': newpath }))
-    newpath = os.path.join(*newpath.split('/'))
-    fullpath = os.path.join(document_root, newpath)
-    localepath = os.path.join(document_root, get_language(), newpath)
+    newpath = posixpath.join(*newpath.split('/'))
     
-    if os.path.exists(localepath):
-        fullpath = localepath
+    localepath = u"%s/%s" % ( get_language(), newpath)
+    
+    if storage.exists(localepath):
+        newpath = localepath
         localized = True
     else:
         localized = False
-    if os.path.isdir(fullpath):
-        fullpath = os.path.join(fullpath, index_document)
+    if storage.isdir(newpath):
+        newpath = posixpath.join(newpath, index_document)
 
     metadata = metadata_defaults.copy()
-    metadata_filename = fullpath + metadata_extension
-    if os.path.exists(metadata_filename):
+    metadata_filename = newpath + metadata_extension
+    if storage.isfile(metadata_filename):
         try:
-            f = open(metadata_filename)
+            f = storage.open(metadata_filename)
             metadata.update(metadata_loader(f.read().decode('utf-8')))
         except:
             logger.error(u"Can not load metadata file: %s" % metadata_filename)
@@ -72,14 +75,14 @@ def serve(request, path=None, document_root=None, index_document='index.html',
     if metadata['redirect_path'] is not False:
         return HttpResponseRedirect(metadata['redirect_path'])
     
-    if os.path.exists(fullpath):
-        f = open(fullpath)
+    if storage.exists(newpath):
+        f = storage.open(newpath)
         data = f.read().decode(metadata['encoding'])
         template = Template(data)
         context = RequestContext(request, metadata['template_context'])
         s = template.render(context)
         metadata['content-type'] = metadata['content-type'] or \
-            mimetypes.guess_type(fullpath)[0] or 'application/octet-stream'
+            mimetypes.guess_type(newpath)[0] or 'application/octet-stream'
         response = HttpResponse(s, mimetype=metadata['content-type'], status=metadata['status_code'])
     else:
         raise Http404(_(u'"%(path)s" does not exist') % {'path': path})

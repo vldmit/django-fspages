@@ -3,11 +3,11 @@ django-fspages
 ==============
 
 Django-fspages is a small application for serving django page templates from
-the filesystem. It may be used as a substitute for ``django.contrib.flatpages``,
-have i18n support, decoupled from Django ORM
+the filesystem or other compatible storage. It may be used as a replacement for
+``django.contrib.flatpages``, have i18n support, is decoupled from Django ORM.
 
 Application provide a ``fspages.views.serve`` view, which does mapping
-between matched path string in URL and page in the filesystem.
+between matched path string in URL and page in the storage.
 
 Each template may be supplemented with a serialized metadata file which have a 
 same name as the template plus the entension suffix. Metadata is loaded by
@@ -21,17 +21,44 @@ available.
 Rationale
 ---------
 
-TODO
+For a django-powered website with dozens of semi-static web pages, usage of
+flatpages may not always be a convenient, as several problem would arise soon:
 
-+i18n
-+revision control
+- flatpages does not support i18n content. You can not by default provide a
+  version of page both in English and Deutsch languages.
 
-Why not prerender/serve static files?
+- flatpage content is a static HTML code, you can use django template language
+  there, access template context, etc. You can't fill several template's
+  placeholders without creating own flatpage object.
+
+- there are two separate paths of customizing the site appearance by
+  the editors Ñ by modifying templates (served from the file system by 
+  default), then editing HTML content of ``FlatPage`` object (via django admin 
+  interface).
+
+- version control of the ``FlatPage`` objects require additional integration
+  with tools like django-reversion
+
+Django-fspages tries to solve this problems by utilizing django storage api
+for storing pages objects and render them as the templates. Site editors 
+can edit pages as regular files with their favorite editors and version
+control systems. Optionally, you can use an application like Django filebrowser
+to edit pages via admin interface.
+
+FAQ
+---
+
+Why not pre-render/serve static files?
+  Static site generators work fine for their tasks, django-fspages is for sites
+  which need to have semi-static pages (i.e. content depends on request
+  parameters such as client IP address).
+
 Why not to use template loader?
+  Comparing with dumb template rendering, django-fspages support correct path
+  mapping, HTML redirects, metadata processing, i18n, sitemaps.
 
-
-Installation
-------------
+Installation and usage
+----------------------
 
 Add ``fspages`` to settings.INSTALLED_APPS
 
