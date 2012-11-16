@@ -1,3 +1,6 @@
 {
-"template_context": { "variable": "VALUE" }
+"template_context": { "variable": "VALUE" },
+"sitemap_priority": 0.7,
+"sitemap_changefreq": "weekly",
+"sitemap_protocol": "https"
 }
