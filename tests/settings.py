@@ -21,6 +21,10 @@ MIDDLEWARE_CLASSES = (
 TEMPLATE_DIRS = (
     pjoin(abspath(dirname(__file__)), 'templates'),
 )
+TEMPLATE_LOADERS = (
+    'fspages.template.loaders.filesystem.I18NLoader',
+    'django.template.loaders.app_directories.Loader'
+)
 ROOT_URLCONF = 'urls'
 INSTALLED_APPS = (
     'django.contrib.staticfiles',

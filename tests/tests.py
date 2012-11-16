@@ -2,6 +2,7 @@ import sys
 import unittest
 import logging
 from os.path import dirname, abspath, pardir, join as pjoin
+from django.template.context import Context
 
 here = abspath(dirname(__file__))
 parent = pjoin(here, pardir)
@@ -18,6 +19,7 @@ from fspages.storage import FSPageStorage
 from fspages.sitemap import FSPagesSitemap
 from django.core.files.storage import FileSystemStorage
 from django.utils.translation import activate
+from django.template import loader
 
 logger = logging.getLogger('fspages') # disable fspages logs as no loggers are initialized by Django
 class NullHandler(logging.Handler):
@@ -160,6 +162,31 @@ class FSPageSitemapTests(TestCase):
         self.assertEqual(0.7, self.sitemap.priority(page))
         self.assertEqual('weekly', self.sitemap.changefreq(page))
         self.assertEqual('https', self.sitemap.protocol(page))
+
+class I18NLoaderTests(TestCase):
+    """
+    Test i18n aware template loader 
+    """
+    
+    def teadDown(self):
+        activate(settings.LANGUAGE_CODE)
+    
+    def test_translated(self):
+        activate('de')
+        template = loader.get_template('include.txt')
+        result = template.render(Context({}))
+        self.assertIn('deutsch', result)
+
+    def test_translated_fallback(self):
+        activate('de')
+        template = loader.get_template('include2.txt')
+        result = template.render(Context({}))
+        self.assertIn('english', result)
+
+    def test_default_language(self):
+        template = loader.get_template('include.txt')
+        result = template.render(Context({}))
+        self.assertIn('english', result)
 
 if __name__ == '__main__':
     unittest.main()
