@@ -6,3 +6,4 @@
 /MANIFEST
 /dist
 tests/tests.sqlite
+/build
