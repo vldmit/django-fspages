@@ -42,8 +42,7 @@ flatpages may not always be a convenient, as several problem would arise soon:
 Django-fspages tries to solve this problems by utilizing django storage api
 for storing pages objects and render them as the templates. Site editors 
 can edit pages as regular files with their favorite editors and version
-control systems. Optionally, you can use an application like Django filebrowser
-to edit pages via admin interface.
+control systems.
 
 FAQ
 ---
