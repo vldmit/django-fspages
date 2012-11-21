@@ -136,7 +136,11 @@ class FSPageStorageTests(TestCase):
         import datetime
         date = self.storage.lastmod('bar.txt')
         self.assertTrue(isinstance(date, datetime.datetime))
-
+    
+    def test_index_document_proper_mimetype(self):
+        page = self.storage.get('')
+        self.assertEqual(page.metadata['content-type'], 'text/html')
+        
 class FSPageSitemapTests(TestCase):
     """
     Test fspages.sitemap.FSPageSitemap

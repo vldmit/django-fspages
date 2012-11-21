@@ -36,14 +36,20 @@ class FSPage(object):
     Represent single page
     """
     
-    def __init__(self, path, data, metadata, language, storage=None):
+    def __init__(self, path, data, metadata, language, storage=None,
+                 is_index=False):
         self.path = path
         self.data = data
         self.metadata = metadata
         self.storage = storage
         self.language = language
-        self.metadata['content-type'] = self.metadata['content-type'] or \
-            mimetypes.guess_type(self.path)[0] or 'application/octet-stream'
+        if is_index:
+            self.metadata['content-type'] = self.metadata.get('content-type') \
+                or mimetypes.guess_type(self.storage.index_document)[0] or \
+                'application/octet-stream'
+        else:
+            self.metadata['content-type'] = self.metadata.get('content-type') or \
+                mimetypes.guess_type(self.path)[0] or 'application/octet-stream'
     
     def lastmod(self, path):
         return self.storage.lastmod(path)
@@ -87,22 +93,26 @@ class FSPageStorage(object):
             localepath = u"%s/%s" % (lang, path)
             res = self._get(localepath)
             if res:
-                data, metadata = res
-                return FSPage(path, data, metadata, lang, storage=self)
+                data, metadata, is_index = res
+                return FSPage(path, data, metadata, lang, storage=self,
+                              is_index=is_index)
         if fallback:
             res = self._get(path)
             if res:
-                data, metadata = res
+                data, metadata, is_index = res
                 return FSPage(path, data, metadata, settings.LANGUAGE_CODE, 
-                              storage=self)
+                              storage=self, is_index=is_index)
 
         raise ObjectDoesNotExist(u"Page %s is not found" % path)
     
     def _get(self, path):
         """
-        Return FSPage object at the given path, or None if object is not available.
+        Return page string, metadata dictionary at the given path, or
+        None if object is not available.
         """
+        is_index = False
         if self.storage.isdir(path):
+            is_index = True
             path = posixpath.join(path, self.index_document)
         
         metadata = self.metadata_defaults.copy()
@@ -126,7 +136,7 @@ class FSPageStorage(object):
             else:
                 return None
         
-        return data, metadata
+        return data, metadata, is_index
     
     def lastmod(self, path):
         "Return last modification time for path as datetime.datetime object"
