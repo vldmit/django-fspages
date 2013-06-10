@@ -5,6 +5,6 @@ setup(name='django-fspages',
       author='Vladimir Dmitriev',
       author_email='vldmit@gmail.com',
       version='0.1',
-      packages=['fspages'],
+      packages=['fspages', 'fspages.template.loaders'],
       license='BSD',
       )
