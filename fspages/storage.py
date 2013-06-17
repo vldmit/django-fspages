@@ -51,8 +51,8 @@ class FSPage(object):
             self.metadata['content-type'] = self.metadata.get('content-type') or \
                 mimetypes.guess_type(self.path)[0] or 'application/octet-stream'
     
-    def lastmod(self, path):
-        return self.storage.lastmod(path)
+    def lastmod(self):
+        return self.storage.lastmod(self.path)
     
     def __unicode__(self):
         return u"<Page '%s' (%s)>" % (self.path, self.language)
