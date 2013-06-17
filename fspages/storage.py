@@ -28,7 +28,6 @@ METADATA_DEFAULTS = {
     'redirect_path': False,
     'sitemap_priority': 0.5,
     'sitemap_changefreq': None,
-    'sitemap_protocol': 'http',
 }
 
 class FSPage(object):

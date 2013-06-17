@@ -165,7 +165,6 @@ class FSPageSitemapTests(TestCase):
         page = self.storage.get('foo.html')
         self.assertEqual(0.7, self.sitemap.priority(page))
         self.assertEqual('weekly', self.sitemap.changefreq(page))
-        self.assertEqual('https', self.sitemap.protocol(page))
 
 class I18NLoaderTests(TestCase):
     """

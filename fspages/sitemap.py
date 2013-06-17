@@ -45,6 +45,3 @@ class FSPagesSitemap(Sitemap):
 
     def priority(self, obj):
         return obj.metadata['sitemap_priority']
-        
-    def protocol(self, obj):
-        return obj.metadata['sitemap_protocol']
