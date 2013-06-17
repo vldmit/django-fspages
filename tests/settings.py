@@ -30,3 +30,4 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'fspages',
 )
+ALLOWED_HOSTS=['*']
