@@ -27,6 +27,9 @@ def serve(request, path=None, storage=None):
     
     path = urllib.unquote(path)
     newpath = posixpath.normpath('/' + path.replace('\\', '/').lstrip('/'))
+    # manually add trailing slash (see http://bugs.python.org/issue1707768 )
+    if len(path) > 0 and path[-1] == '/':
+        newpath += '/'
     newpath = newpath.lstrip('/')
     if path != newpath:
         resolver_match = resolve(request.path_info)
