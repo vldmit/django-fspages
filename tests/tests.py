@@ -17,6 +17,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from fspages.storage import FSPageStorage
 from fspages.sitemap import FSPagesSitemap
+from fspages.utils import find_paths
 from django.core.files.storage import FileSystemStorage
 from django.utils.translation import activate
 from django.template import loader
@@ -74,6 +75,30 @@ class FSPageTests(TestCase):
     def test_forbid_metadata_extensions(self):
         response = self.client.get('/pages/foo.html.meta.json')
         self.assertEqual(response.status_code, 403)
+
+class UtilsTests(TestCase):
+    """
+    Test fspages.utils
+    """
+    storage = FSPageStorage(backend=FileSystemStorage(location=pjoin(here, 'test_pages')))
+    
+    def test_find_paths_without_language(self):
+        paths = list(find_paths('', self.storage))
+        self.assertIn('dir/file.txt', paths)
+        self.assertIn('foo.html', paths)
+        self.assertNotIn('bar.txt.meta.json', paths)
+        self.assertNotIn('de/index.html', paths)
+        self.assertEqual(len(paths), 5)
+    
+    def test_find_paths_with_lang(self):
+        paths = list(find_paths('', self.storage, language='de'))
+        self.assertIn('index.html', paths)
+        self.assertEqual(len(paths), 1)
+    
+    def test_find_paths_subdir(self):
+        paths = list(find_paths('dir', self.storage))
+        self.assertIn('dir/file.txt', paths)
+        self.assertEqual(len(paths), 1)
 
 class FSPageStorageTests(TestCase):
     """

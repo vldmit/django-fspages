@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import posixpath
+from .utils import find_paths
 
 from django.contrib.sitemaps import Sitemap
 from django.core.urlresolvers import reverse
@@ -12,23 +12,11 @@ class FSPagesSitemap(Sitemap):
         self.pattern_name = pattern_name
         
     def items(self):
-        def find_paths(path, language=None):
-            if language is not None:
-                fullpath = posixpath.join(language, path)
-            else:
-                fullpath = path
-            dirs, files = self.storage.listdir(fullpath)
-            for f in files:
-                yield posixpath.join(path, f)
-            for d in dirs:
-                innerpath = posixpath.join(path, d)
-                for p in find_paths(innerpath, language=language):
-                    yield p
         items = []
-        for path in find_paths(''):
+        for path in find_paths('', self.storage):
             items.append(self.storage.get(path))
         for language in self.language_prefixes:
-            for path in find_paths('', language=language):
+            for path in find_paths('', self.storage, language=language):
                 items.append(self.storage.get(path, lang=language, fallback=False))
         return items
             
