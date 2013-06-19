@@ -1,3 +1,4 @@
-include test/*.py
-graft test/templates
-graft test/test_pages
+include tests/*.py
+include README.rst
+graft tests/templates
+graft tests/test_pages
